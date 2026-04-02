@@ -2,10 +2,7 @@ import express from 'express';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
 import { connect } from 'mongoose';
-const express = require('express');
-const http = require('http');
 const { Server } = require('socket.io');
-const mongoose = require('mongoose');
 const JWT_SECRET = process.env.JWT_SECRET || "supersecretkey";
 
 const app = express();
@@ -42,13 +39,13 @@ app.post("/api/register", async (req, res) => {
   try {
     const { username, password, publicKey } = req.body;
 
-    const existingUser = await User.findOne({ username });
+    const existingUser = await user.findOne({ username });
     if (existingUser)
       return res.status(400).json({ message: "User already exists" });
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    const user = new User({
+    const user = new user({
       username,
       password: hashedPassword,
       publicKey,
@@ -67,7 +64,7 @@ app.post("/api/login", async (req, res) => {
   try {
     const { username, password } = req.body;
 
-    const user = await User.findOne({ username });
+    const user = await user.findOne({ username });
     if (!user)
       return res.status(400).json({ message: "Invalid credentials" });
 
