@@ -2,12 +2,15 @@ import express from 'express';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
 import { connect } from 'mongoose';
-const { Server } = require('socket.io');
-const JWT_SECRET = process.env.JWT_SECRET || "supersecretkey";
+import bcrypt from 'bcrypt';
+import jwt from 'jsonwebtoken';
+import User from './models/User.js';
 
+const JWT_SECRET = process.env.JWT_SECRET || "supersecretkey";
 const app = express();
 const server = createServer(app);
 const io = new Server(server, { cors: { origin: "*" } });
+app.use(express.json());
 
 io.on('connection',(socket) =>{
   console.log("New user connected with ID:",socket.id);
@@ -39,13 +42,13 @@ app.post("/api/register", async (req, res) => {
   try {
     const { username, password, publicKey } = req.body;
 
-    const existingUser = await user.findOne({ username });
+    const existingUser = await User.findOne({ username });
     if (existingUser)
       return res.status(400).json({ message: "User already exists" });
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    const user = new user({
+    const user = new User({
       username,
       password: hashedPassword,
       publicKey,
@@ -64,7 +67,7 @@ app.post("/api/login", async (req, res) => {
   try {
     const { username, password } = req.body;
 
-    const user = await user.findOne({ username });
+    const user = await User.findOne({ username });
     if (!user)
       return res.status(400).json({ message: "Invalid credentials" });
 
