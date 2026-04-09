@@ -11,14 +11,14 @@ export default function Chat() {
     const [selectedUser, setSelectedUser] = useState(null);
 
     return (
-        <div>
+        <div className="flex h-screen bg-gray-950">
             <UsersList onSelectUser={(username) => setSelectedUser(username)} />
-            {selectedUser && (
-                <ChatWindow 
-                    currentUserId={currentUserId}
-                    targetUserId={selectedUser}
-                />
-            )}
+            {selectedUser
+                ? <ChatWindow currentUserId={currentUserId} targetUserId={selectedUser} />
+                : <div className="flex-1 flex items-center justify-center text-gray-500 text-lg">
+                    Select a contact to start chatting
+                </div>
+            }
         </div>
     );
 }
