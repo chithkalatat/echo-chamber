@@ -14,7 +14,7 @@ export default function Chat() {
         <div>
             <UsersList onSelectUser={(username) => setSelectedUser(username)} />
             {selectedUser && (
-                <ChatWindow
+                <ChatWindow 
                     currentUserId={currentUserId}
                     targetUserId={selectedUser}
                 />

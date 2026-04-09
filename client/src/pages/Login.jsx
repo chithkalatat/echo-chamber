@@ -1,6 +1,6 @@
 import { useState } from "react";
 import axios from "axios";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 
 
 export default function Login() {
@@ -24,7 +24,7 @@ export default function Login() {
         <h2 className="text-2xl mb-6 text-center font-bold">
           Login
         </h2>
-
+            
         <input
           type="text"
           placeholder="Username"
@@ -46,6 +46,13 @@ export default function Login() {
         <button className="w-full bg-indigo-600 hover:bg-indigo-700 p-3 rounded">
           Login
         </button>
+
+        <p className="text-center mt-4 text-gray-400">
+          Don't have an account?{" "}
+          <Link to="/register" className="text-indigo-400 hover:underline">
+            Go to Register
+          </Link>
+        </p>
       </form>
     </div>
   );
