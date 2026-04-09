@@ -87,4 +87,12 @@ app.post("/api/login", async (req, res) => {
   }
 });
 
-
+app.get('/api/users',async(req,res) => {
+  try{
+    const uname = await User.find({}).select('username')
+    res.json(uname)
+  }
+  catch(err){
+    res.status(500).json({error: err.message})
+  }
+})
