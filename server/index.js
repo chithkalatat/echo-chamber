@@ -22,7 +22,7 @@ io.on('connection', (socket) => {
 
   socket.on('private_message', (data) => {
     io.to(data.toUserId).emit('new_message', {
-      from: socket.id,
+      from: data.fromUserId,
       message: data.message
     });
   })

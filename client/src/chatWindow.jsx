@@ -19,7 +19,7 @@ const ChatWindow = ({ currentUserId, targetUserId }) => {
     function handleSend() {
         if (message.trim() && socket) {
             setMessages((prev) => [...prev, { from: 'Me', message }]);
-            socket.emit('private_message', { toUserId: targetUserId, message });
+            socket.emit('private_message', { toUserId: targetUserId, message, fromUserId: currentUserId });
             setMessage('');
         }
     }
