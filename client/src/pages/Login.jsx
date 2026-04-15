@@ -1,20 +1,21 @@
 import { useState } from "react";
 import axios from "axios";
 import { useNavigate, Link } from "react-router-dom";
-
-
 export default function Login() {
   const [form, setForm] = useState({ username: "", password: "" });
-
+  const [error, setError] = useState("");
   const navigate = useNavigate();
-
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const res = await axios.post("/api/login", form);
-    localStorage.setItem("token", res.data.token);
-    navigate("/chat");
+    setError("");
+    try {
+      const res = await axios.post("/api/login", form);
+      localStorage.setItem("token", res.data.token);
+      navigate("/chat");
+    } catch (err) {
+      setError(err.response?.data?.message || "An error occurred during login");
+    }
   };
-
   return (
     <div className="min-h-screen flex items-center justify-center bg-black text-white">
       <form
@@ -24,7 +25,13 @@ export default function Login() {
         <h2 className="text-2xl mb-6 text-center font-bold">
           Login
         </h2>
-            
+
+        {error && (
+          <div className="bg-red-500/20 border border-red-500 text-red-100 p-3 rounded mb-4 text-sm text-center">
+            {error}
+          </div>
+        )}
+
         <input
           type="text"
           placeholder="Username"
