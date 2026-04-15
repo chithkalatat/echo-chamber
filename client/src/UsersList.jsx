@@ -4,9 +4,24 @@ const UsersList = ({ onSelectUser }) => {
     const [users, setUsers] = useState([]);
 
     useEffect(() => {
-        fetch('/api/users')
-            .then(res => res.json())
-            .then(data => setUsers(data))
+        const token = localStorage.getItem("token");
+        fetch('/api/users', {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        })
+            .then(res => {
+                if (!res.ok) throw new Error("Failed to fetch");
+                return res.json();
+            })
+            .then(data => {
+                if (Array.isArray(data)) setUsers(data);
+                else setUsers([]);
+            })
+            .catch(err => {
+                console.error(err);
+                setUsers([]);
+            });
     }, []);
 
     return (
