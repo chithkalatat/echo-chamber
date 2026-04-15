@@ -10,11 +10,19 @@ const ChatWindow = ({ currentUserId, targetUserId }) => {
         const newSocket = io('http://localhost:5000');
         setSocket(newSocket);
         newSocket.emit('login', currentUserId);
+        fetch(`/api/messages/${currentUserId}/${targetUserId}`)
+        .then(res => res.json())
+        .then( history =>{
+            setMessages(history.map(msg => ({
+                from:msg.from == currentUserId ? 'Me': msg.from,
+                message: msg.message
+            })));
+        });
         newSocket.on('new_message', (data) => {
             setMessages((prev) => [...prev, { from: data.from, message: data.message }]);
         });
         return () => newSocket.disconnect();
-    }, [currentUserId]);
+    }, [currentUserId,targetUserId]);
 
     function handleSend() {
         if (message.trim() && socket) {
