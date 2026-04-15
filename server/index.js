@@ -5,6 +5,7 @@ import { connect } from 'mongoose';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import User from './models/User.js';
+import Message from './models/Message.js';
 
 const JWT_SECRET = process.env.JWT_SECRET || "supersecretkey";
 const app = express();
@@ -20,11 +21,17 @@ io.on('connection', (socket) => {
     console.log("Socket joined the room", userId);
   })
 
-  socket.on('private_message', (data) => {
+  socket.on('private_message', async (data) => {
     io.to(data.toUserId).emit('new_message', {
       from: data.fromUserId,
       message: data.message
     });
+    const newMessage = new Message({
+      from: data.fromUserId,
+      to: data.toUserId,
+      message: data.message
+    });
+    await newMessage.save();
   })
 })
 
@@ -34,6 +41,22 @@ connect(process.env.MONGO_URI || 'mongodb://mongodb:27017/echochamber')
   .catch(err => console.error(err));
 
 app.get('/', (req, res) => res.send("EchoChamber Backend Running"));
+
+app.get('/api/messages/:userId1/:userId2',async(req,res) => {
+  try{
+    const { userId1, userId2 } = req.params;
+    const messages = await Message.find({
+      $or: [
+        { from: userId1, to: userId2 },
+        { from: userId2, to: userId1 }
+      ]
+    }).sort({ createdAt: 1 });
+    res.json(messages);
+  }
+  catch(err){
+    res.status(500).json({error: err.message});
+  }
+})
 
 server.listen(5000, () => console.log("Server listening on port 5000"));
 
