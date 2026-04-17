@@ -14,7 +14,7 @@ export default function Chat() {
     const navigate = useNavigate();
 
     useEffect(() => {
-        const newSocket = io('http://localhost:5000');
+        const newSocket = io();
         newSocket.emit('login', currentUserId);
         setSocket(newSocket);
         return () => newSocket.disconnect();

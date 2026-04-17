@@ -1,15 +1,9 @@
-
-
 services:
-  # The Backend API (Node.js)
   backend:
     build: ./server
     container_name: echo_backend
     ports:
       - "5000:5000"
-    volumes:
-      - ./server:/app
-      - /app/node_modules
     environment:
       - MONGO_URI=mongodb://mongodb:27017/echochamber
       - REDIS_HOST=redis
@@ -19,7 +13,6 @@ services:
       - mongodb
       - redis
 
-  # The Database (MongoDB)
   mongodb:
     image: mongo:latest
     container_name: echo_mongo
@@ -28,22 +21,17 @@ services:
     volumes:
       - mongo-data:/data/db
 
-  # The Cache/Messenger (Redis)
   redis:
     image: redis:alpine
     container_name: echo_redis
     ports:
       - "6379:6379"
 
-  # The Frontend (React/Vite)
   frontend:
     build: ./client
     container_name: echo_frontend
     ports:
-      - "5173:5173"
-    volumes:
-      - ./client:/app
-      - /app/node_modules
+      - "80:80"
     depends_on:
       - backend
 
