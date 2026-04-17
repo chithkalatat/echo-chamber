@@ -13,13 +13,28 @@ const server = createServer(app);
 const io = new Server(server, { cors: { origin: "*" } });
 app.use(express.json());
 
+const onlineUsers = new Map();
+
 io.on('connection', (socket) => {
   console.log("New user connected with ID:", socket.id);
-
+  socket.on('disconnect', () => {
+    for(const [userId, socketId] of onlineUsers){
+      if(socketId === socket.id){
+        onlineUsers.delete(userId);
+        break;
+      }
+    }
+    io.emit('online_users',
+      Array.from(onlineUsers.keys()));
+      console.log("User Disconnected:",socket.id)
+  })
   socket.on('login', (userId) => {
     socket.join(userId);
+    onlineUsers.set(userId,socket.id);
+    io.emit('online_users',
+      Array.from(onlineUsers.keys()))
     console.log("Socket joined the room", userId);
-  })
+  });
 
   socket.on('private_message', async (data) => {
     io.to(data.toUserId).emit('new_message', {

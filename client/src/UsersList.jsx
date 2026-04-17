@@ -1,7 +1,16 @@
 import { useState, useEffect } from "react"
 
-const UsersList = ({ onSelectUser }) => {
+const UsersList = ({ onSelectUser, socket }) => {
     const [users, setUsers] = useState([]);
+    const [onlineUsers, setOnlineUsers] = useState([]);
+
+    useEffect(() => {
+        if (!socket) return;
+        socket.on('online_users', (usersList) => {
+            setOnlineUsers(usersList);
+        });
+        return () => socket.off('online_users');
+    }, [socket]);
 
     useEffect(() => {
         const token = localStorage.getItem("token");
@@ -36,8 +45,11 @@ const UsersList = ({ onSelectUser }) => {
                         onClick={() => onSelectUser(user.username)}
                         className="flex items-center gap-3 p-4 border-b border-gray-800 cursor-pointer hover:bg-gray-700 text-white transition-colors"
                     >
-                        <div className="w-8 h-8 rounded-full bg-indigo-600 flex items-center justify-center font-bold text-sm">
-                            {user.username[0].toUpperCase()}
+                        <div className="relative">
+                            <div className="w-8 h-8 rounded-full bg-indigo-600 flex items-center justify-center font-bold text-sm">
+                                {user.username[0].toUpperCase()}
+                            </div>
+                            <span className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-gray-900 ${onlineUsers.includes(user.username) ? 'bg-green-500' : 'bg-gray-500'}`}></span>
                         </div>
                         {user.username}
                     </li>
