@@ -1,28 +1,29 @@
 import { useEffect, useState } from "react";
-import { io } from "socket.io-client";
 
-const ChatWindow = ({ currentUserId, targetUserId }) => {
+const ChatWindow = ({ currentUserId, targetUserId, socket }) => {
     const [message, setMessage] = useState('');
     const [messages, setMessages] = useState([]);
-    const [socket, setSocket] = useState(null);
 
     useEffect(() => {
-        const newSocket = io('http://localhost:5000');
-        setSocket(newSocket);
-        newSocket.emit('login', currentUserId);
+        if (!socket) return;
+
+        // Load history
         fetch(`/api/messages/${currentUserId}/${targetUserId}`)
-        .then(res => res.json())
-        .then( history =>{
-            setMessages(history.map(msg => ({
-                from:msg.from == currentUserId ? 'Me': msg.from,
-                message: msg.message
-            })));
-        });
-        newSocket.on('new_message', (data) => {
+            .then(res => res.json())
+            .then(history => {
+                setMessages(history.map(msg => ({
+                    from: msg.from === currentUserId ? 'Me' : msg.from,
+                    message: msg.message
+                })));
+            });
+
+        const handleNewMessage = (data) => {
             setMessages((prev) => [...prev, { from: data.from, message: data.message }]);
-        });
-        return () => newSocket.disconnect();
-    }, [currentUserId,targetUserId]);
+        };
+
+        socket.on('new_message', handleNewMessage);
+        return () => socket.off('new_message', handleNewMessage);
+    }, [socket, currentUserId, targetUserId]);
 
     function handleSend() {
         if (message.trim() && socket) {
