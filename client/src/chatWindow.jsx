@@ -5,7 +5,9 @@ const ChatWindow = ({ currentUserId, targetUserId, socket }) => {
     const [messages, setMessages] = useState([]);
 
     useEffect(() => {
-        if (!socket) return;
+        const newSocket = io('http://localhost:5000');
+        setSocket(newSocket);
+        newSocket.emit('login', currentUserId);
         fetch(`/api/messages/${currentUserId}/${targetUserId}`)
         .then(res => res.json())
         .then( history =>{
@@ -14,11 +16,11 @@ const ChatWindow = ({ currentUserId, targetUserId, socket }) => {
                 message: msg.message
             })));
         });
-        socket.on('new_message', (data) => {
+        newSocket.on('new_message', (data) => {
             setMessages((prev) => [...prev, { from: data.from, message: data.message }]);
         });
-        return () => socket.off('new_message');
-    }, [currentUserId, targetUserId, socket]);
+        return () => newSocket.disconnect();
+    }, [currentUserId,targetUserId]);
 
     function handleSend() {
         if (message.trim() && socket) {
