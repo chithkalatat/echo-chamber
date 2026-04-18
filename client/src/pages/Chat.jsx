@@ -12,6 +12,14 @@ export default function Chat() {
     const [selectedUser, setSelectedUser] = useState(null);
     const [socket, setSocket] = useState(null);
     const navigate = useNavigate();
+
+    useEffect(() => {
+        const newSocket = io();
+        newSocket.emit('login', currentUserId);
+        setSocket(newSocket);
+        return () => newSocket.disconnect();
+    }, [currentUserId]);
+
     const handleLogout = () => {
         localStorage.removeItem('token');
         navigate('/login');
@@ -25,7 +33,11 @@ export default function Chat() {
             >
                 Logout
             </button>
-            <UsersList onSelectUser={(username) => setSelectedUser(username)} />
+            <UsersList
+                onSelectUser={(username) => setSelectedUser(username)}
+                socket={socket}
+                selectedUser={selectedUser}
+            />
             {selectedUser
                 ? <ChatWindow currentUserId={currentUserId} targetUserId={selectedUser} socket={socket} />
                 : <div className="flex-1 flex items-center justify-center text-gray-500 text-lg">
@@ -35,4 +47,3 @@ export default function Chat() {
         </div>
     );
 }
-

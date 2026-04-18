@@ -1,7 +1,12 @@
 import { useState, useEffect } from "react"
 
-const UsersList = ({ onSelectUser }) => {
+const UsersList = ({ onSelectUser, socket, selectedUser }) => {
     const [users, setUsers] = useState([]);
+    const [onlineUsers, setOnlineUsers] = useState([]);
+    const [unreadCounts, setUnreadCounts] = useState(() => {
+        const saved = localStorage.getItem('unreadCounts');
+        return saved ? JSON.parse(saved) : {};
+    });
 
     useEffect(() => {
         const token = localStorage.getItem("token");
@@ -28,17 +33,22 @@ const UsersList = ({ onSelectUser }) => {
 
     useEffect(() => {
         if (!socket) return;
+        socket.on('online_users', (usersList) => {
+            setOnlineUsers(usersList);
+        });
+        return () => socket.off('online_users');
+    }, [socket]);
 
+    useEffect(() => {
+        if (!socket) return;
         const handleNewMessage = (data) => {
             const sender = data.from;
             if (sender === selectedUser) return;
-
             setUnreadCounts(prev => ({
                 ...prev,
                 [sender]: (prev[sender] || 0) + 1
             }));
         };
-
         socket.on('new_message', handleNewMessage);
         return () => socket.off('new_message', handleNewMessage);
     }, [socket, selectedUser]);

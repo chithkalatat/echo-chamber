@@ -5,22 +5,20 @@ const ChatWindow = ({ currentUserId, targetUserId, socket }) => {
     const [messages, setMessages] = useState([]);
 
     useEffect(() => {
-        const newSocket = io('http://localhost:5000');
-        setSocket(newSocket);
-        newSocket.emit('login', currentUserId);
+        if (!socket) return;
         fetch(`/api/messages/${currentUserId}/${targetUserId}`)
-        .then(res => res.json())
-        .then( history =>{
-            setMessages(history.map(msg => ({
-                from:msg.from == currentUserId ? 'Me': msg.from,
-                message: msg.message
-            })));
-        });
-        newSocket.on('new_message', (data) => {
+            .then(res => res.json())
+            .then(history => {
+                setMessages(history.map(msg => ({
+                    from: msg.from == currentUserId ? 'Me' : msg.from,
+                    message: msg.message
+                })));
+            });
+        socket.on('new_message', (data) => {
             setMessages((prev) => [...prev, { from: data.from, message: data.message }]);
         });
-        return () => newSocket.disconnect();
-    }, [currentUserId,targetUserId]);
+        return () => socket.off('new_message');
+    }, [currentUserId, targetUserId, socket]);
 
     function handleSend() {
         if (message.trim() && socket) {
@@ -32,12 +30,9 @@ const ChatWindow = ({ currentUserId, targetUserId, socket }) => {
 
     return (
         <div className="flex flex-col h-screen flex-1 bg-gray-950">
-            {/* Header */}
             <div className="p-4 border-b border-gray-700 bg-gray-900 text-white font-bold text-lg">
                 💬 {targetUserId}
             </div>
-
-            {/* Messages */}
             <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-2">
                 {messages.map((msg, idx) => (
                     <div key={idx} className={`flex ${msg.from === 'Me' ? 'justify-end' : 'justify-start'}`}>
@@ -48,8 +43,6 @@ const ChatWindow = ({ currentUserId, targetUserId, socket }) => {
                     </div>
                 ))}
             </div>
-
-            {/* Input */}
             <div className="p-4 bg-gray-900 border-t border-gray-700 flex gap-2">
                 <input
                     value={message}
