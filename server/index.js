@@ -57,7 +57,7 @@ connect(process.env.MONGO_URI || 'mongodb://mongodb:27017/echochamber')
 
 app.get('/', (req, res) => res.send("EchoChamber Backend Running"));
 
-app.get('/api/messages/:userId1/:userId2',async(req,res) => {
+app.get('/api/messages/:userId1/:userId2',verifyToken,async(req,res) => {
   try{
     const { userId1, userId2 } = req.params;
     const messages = await Message.find({

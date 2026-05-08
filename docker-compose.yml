@@ -2,34 +2,32 @@ services:
   backend:
     build: ./server
     container_name: echo_backend
+    restart: unless-stopped
     ports:
       - "5000:5000"
     environment:
       - MONGO_URI=mongodb://mongodb:27017/echochamber
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
       - JWT_SECRET=supersecretkey
     depends_on:
-      - mongodb
-      - redis
+       mongodb:
+        condition: service_healthy
 
   mongodb:
     image: mongo:latest
     container_name: echo_mongo
-    ports:
-      - "27017:27017"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     volumes:
       - mongo-data:/data/db
-
-  redis:
-    image: redis:alpine
-    container_name: echo_redis
-    ports:
-      - "6379:6379"
 
   frontend:
     build: ./client
     container_name: echo_frontend
+    restart: unless-stopped
     ports:
       - "80:80"
     depends_on:
