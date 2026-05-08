@@ -6,7 +6,9 @@ const ChatWindow = ({ currentUserId, targetUserId, socket }) => {
 
     useEffect(() => {
         if (!socket) return;
-        fetch(`/api/messages/${currentUserId}/${targetUserId}`)
+        fetch(`/api/messages/${currentUserId}/${targetUserId}`,{
+            headers : { 'Authorization':`Bearer ${localStorage.getItem('token')}` }
+        })
             .then(res => res.json())
             .then(history => {
                 setMessages(history.map(msg => ({
