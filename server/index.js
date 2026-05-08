@@ -6,12 +6,32 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import User from './models/User.js';
 import Message from './models/Message.js';
+import cors from 'cors';
 
-const JWT_SECRET = process.env.JWT_SECRET || "supersecretkey";
+const JWT_SECRET = process.env.JWT_SECRET;
+
+if (!JWT_SECRET) {
+  console.error("FATAL ERROR: JWT_SECRET is not defined in environment variables.");
+  process.exit(1);
+}
+
 const app = express();
 const server = createServer(app);
-const io = new Server(server, { cors: { origin: "*" } });
+
+// Use FRONTEND_URL from environment, or fallback to localhost
+const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost";
+
+const corsOptions = {
+  origin: FRONTEND_URL,
+  optionsSuccessStatus: 200
+};
+
+// Apply CORS to both Express HTTP routes and Socket.io
+app.use(cors(corsOptions));
+const io = new Server(server, { cors: corsOptions });
+
 app.use(express.json());
+
 
 const onlineUsers = new Map();
 

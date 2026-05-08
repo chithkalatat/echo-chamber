@@ -5,9 +5,11 @@ services:
     restart: unless-stopped
     ports:
       - "5000:5000"
-    environment:
-      - MONGO_URI=mongodb://mongodb:27017/echochamber
-      - JWT_SECRET=supersecretkey
+      
+    env_file:
+      - .env
+
+
     depends_on:
        mongodb:
         condition: service_healthy
