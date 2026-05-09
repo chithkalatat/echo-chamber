@@ -14,7 +14,7 @@ export default function Chat() {
     const navigate = useNavigate();
 
     useEffect(() => {
-        const newSocket = io();
+        const newSocket = io(import.meta.env.VITE_BACKEND_URL || "");
         newSocket.emit('login', currentUserId);
         setSocket(newSocket);
         return () => newSocket.disconnect();

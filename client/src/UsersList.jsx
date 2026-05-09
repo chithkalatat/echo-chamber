@@ -10,7 +10,8 @@ const UsersList = ({ onSelectUser, socket, selectedUser }) => {
 
     useEffect(() => {
         const token = localStorage.getItem("token");
-        fetch('/api/users', {
+        const API_URL = import.meta.env.VITE_BACKEND_URL || "";
+        fetch(`${API_URL}/api/users`, {
             headers: { 'Authorization': `Bearer ${token}` }
         })
             .then(res => {

@@ -6,7 +6,8 @@ const ChatWindow = ({ currentUserId, targetUserId, socket }) => {
 
     useEffect(() => {
         if (!socket) return;
-        fetch(`/api/messages/${currentUserId}/${targetUserId}`,{
+        const API_URL = import.meta.env.VITE_BACKEND_URL || "";
+        fetch(`${API_URL}/api/messages/${currentUserId}/${targetUserId}`,{
             headers : { 'Authorization':`Bearer ${localStorage.getItem('token')}` }
         })
             .then(res => res.json())
