@@ -77,6 +77,22 @@ connect(process.env.MONGO_URI || 'mongodb://mongodb:27017/echochamber')
 
 app.get('/', (req, res) => res.send("EchoChamber Backend Running"));
 
+const verifyToken = (req, res, next) => {
+  const authHeader = req.headers['authorization'];
+  if (!authHeader) return res.status(403).json({ message: 'No token provided' });
+
+  const token = authHeader.split(' ')[1] || authHeader;
+  if (!token) return res.status(403).json({ message: 'No token provided' });
+
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET);
+    req.user = decoded;
+    next();
+  } catch (err) {
+    return res.status(401).json({ message: 'Unauthorized' });
+  }
+};
+
 app.get('/api/messages/:userId1/:userId2',verifyToken,async(req,res) => {
   try{
     const { userId1, userId2 } = req.params;
@@ -144,22 +160,6 @@ app.post("/api/login", async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
-
-  const verifyToken = (req, res, next) => {
-  const authHeader = req.headers['authorization'];
-  if (!authHeader) return res.status(403).json({ message: 'No token provided' });
-
-  const token = authHeader.split(' ')[1] || authHeader;
-  if (!token) return res.status(403).json({ message: 'No token provided' });
-
-  try {
-    const decoded = jwt.verify(token, JWT_SECRET);
-    req.user = decoded;
-    next();
-  } catch (err) {
-    return res.status(401).json({ message: 'Unauthorized' });
-  }
-};
 
 app.get('/api/users', verifyToken, async (req, res) => {
   try {
