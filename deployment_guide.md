@@ -10,7 +10,11 @@ This guide walks you through deploying the EchoChamber chat application 100% fre
 2. Create a new project and build a database choosing the **M0 Free Tier** (Shared Cluster).
 3. Select a cloud provider (e.g., AWS) and region near your users.
 4. Set up a database user with a password (make sure to write down the password).
-5. In **Network Access**, add `0.0.0.0/0` (allow access from anywhere) so that Render can connect to your database.
+5. In **Network Access**, instead of adding `0.0.0.0/0` (which allows access from the entire internet), you can restrict access to just Render's servers for stronger security:
+   - Go to your Render Dashboard for your backend service (after creating it in Step 3).
+   - Click the **Connect** dropdown button at the top right of the service page and select the **Outbound** tab.
+   - Copy the listed IP ranges (which are the shared outbound IP ranges for your Render region).
+   - In MongoDB Atlas **Network Access**, add each of these IP ranges. This ensures only applications hosted in your Render region can connect to your database.
 6. Click **Connect** -> **Drivers** -> Copy the connection string. It will look like:
    ```text
    mongodb+srv://<username>:<password>@cluster0.xxxx.mongodb.net/?retryWrites=true&w=majority
