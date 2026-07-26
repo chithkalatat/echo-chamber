@@ -1,0 +1,42 @@
+System Requirements and Prerequisites for EchoChamber
+=====================================================
+
+1. Docker & Docker Compose
+   Ensure Docker Desktop is installed and running.
+   - Download: https://www.docker.com/products/docker-desktop/
+
+2. Node.js (version 20 or higher)
+   Required for local development and running tests.
+   - Download: https://nodejs.org/
+
+3. Google Cloud Console Credentials (Optional - for Google OAuth)
+   Required if you want to test Google Login:
+   - Create client ID and client secret in Google Cloud Console.
+   - Authorized redirect URI must be: http://localhost/api/auth/google/callback
+
+4. SMTP Email Credentials (Optional - for Password Reset emails)
+   - EMAIL_USER: Your Gmail address
+   - EMAIL_PASS: Google App Password
+
+How to Run the Application
+==========================
+
+1. Setup Environment Variables:
+   Copy .env.example to a new file named .env and fill in your values:
+   $ cp .env.example .env
+
+2. Start the Application via Docker Compose:
+   $ docker compose up --build -d
+
+3. Access the Web App:
+   Open http://localhost in your browser.
+
+How to Run Tests Locally
+========================
+
+1. Install backend dependencies:
+   $ cd server
+   $ npm install
+
+2. Run the test suite:
+   $ npm test
