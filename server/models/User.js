@@ -7,9 +7,18 @@ const userSchema = new mongoose.Schema(
       required: true,
       unique: true,
     },
+    email: {
+      type: String,
+      unique: true,
+      sparse: true,
+    },
     password: {
       type: String,
-      required: true,
+    },
+    googleId: {
+      type: String,
+      unique: true,
+      sparse: true,
     },
     publicKey: {
       type: String,

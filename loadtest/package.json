@@ -1,0 +1,9 @@
+{
+  "name": "echo-chamber-loadtest",
+  "version": "1.0.0",
+  "type": "module",
+  "private": true,
+  "dependencies": {
+    "socket.io-client": "^4.7.2"
+  }
+}

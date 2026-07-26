@@ -1,18 +1,27 @@
 services:
   backend:
     build: ./server
-    container_name: echo_backend
     restart: unless-stopped
-    ports:
-      - "5000:5000"
-      
     env_file:
       - .env
-
-
+    environment:
+      - REDIS_URL=redis://redis:6379
+    deploy:
+      replicas: 2
     depends_on:
-       mongodb:
+      mongodb:
         condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  redis:
+    image: redis:alpine
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   mongodb:
     image: mongo:latest
