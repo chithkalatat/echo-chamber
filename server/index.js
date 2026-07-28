@@ -355,10 +355,12 @@ async function main() {
     }
   }));
 
+  const cleanFrontendUrl = FRONTEND_URL.replace(/\/$/, "");
+
   app.get('/api/auth/google', passport.authenticate('google', { scope: ['profile', 'email'] }));
 
   app.get('/api/auth/google/callback', 
-    passport.authenticate('google', { failureRedirect: '/login' }),
+    passport.authenticate('google', { failureRedirect: `${cleanFrontendUrl}/login` }),
     (req, res) => {
       if (req.user.isNew) {
         // New Google user — issue a short-lived setup token for username selection
@@ -367,7 +369,7 @@ async function main() {
           JWT_SECRET,
           { expiresIn: '10m' }
         );
-        return res.redirect(`/set-username?setup_token=${setupToken}`);
+        return res.redirect(`${cleanFrontendUrl}/set-username?setup_token=${setupToken}`);
       }
 
       // Existing user — issue normal JWT
@@ -376,7 +378,7 @@ async function main() {
         JWT_SECRET,
         { expiresIn: "1d" }
       );
-      res.redirect(`/login?token=${token}`);
+      res.redirect(`${cleanFrontendUrl}/login?token=${token}`);
     }
   );
 
