@@ -1,6 +1,8 @@
 import { useEffect, useState, useRef, useLayoutEffect } from "react";
 
-const ChatWindow = ({ currentUserId, targetUserId, socket, isOnline }) => {
+const ChatWindow = ({ currentUserId, targetUser, socket, isOnline }) => {
+    const targetUserId = targetUser._id;
+    const targetUsername = targetUser.username;
     const [message, setMessage] = useState('');
     const [messages, setMessages] = useState([]);
     const [isTyping, setIsTyping] = useState(false);
@@ -30,7 +32,7 @@ const ChatWindow = ({ currentUserId, targetUserId, socket, isOnline }) => {
             .then(history => {
                 const loadedMessages = history.map(msg => ({
                     _id: msg._id,
-                    from: msg.from === currentUserId ? 'Me' : msg.from,
+                    from: msg.from === currentUserId ? 'Me' : targetUsername,
                     message: msg.message,
                     status: msg.status,
                     createdAt: msg.createdAt
@@ -63,7 +65,7 @@ const ChatWindow = ({ currentUserId, targetUserId, socket, isOnline }) => {
             
             setMessages((prev) => {
                 if (prev.some(m => m._id === data._id)) return prev;
-                return [...prev, { _id: data._id, from: data.from, message: data.message, status: data.status, createdAt: data.createdAt }];
+                return [...prev, { _id: data._id, from: targetUsername, message: data.message, status: data.status, createdAt: data.createdAt }];
             });
             
             // Auto scroll to bottom for new incoming messages if the user is already near the bottom
@@ -163,7 +165,7 @@ const ChatWindow = ({ currentUserId, targetUserId, socket, isOnline }) => {
 
                 const olderMessages = history.map(msg => ({
                     _id: msg._id,
-                    from: msg.from === currentUserId ? 'Me' : msg.from,
+                    from: msg.from === currentUserId ? 'Me' : targetUsername,
                     message: msg.message,
                     status: msg.status,
                     createdAt: msg.createdAt
@@ -222,7 +224,7 @@ const ChatWindow = ({ currentUserId, targetUserId, socket, isOnline }) => {
     return (
         <div className="flex flex-col h-screen flex-1 bg-gray-950">
             <div className="p-4 border-b border-gray-700 bg-gray-900 text-white font-bold text-lg">
-                <div>💬 {targetUserId}</div>
+                <div>💬 {targetUsername}</div>
                 <div className="text-xs text-gray-400 font-normal">{isOnline ? 'Online' : 'Offline'}</div>
             </div>
             

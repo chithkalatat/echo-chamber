@@ -45,9 +45,9 @@ const UsersList = ({ onSelectUser, socket, selectedUser, currentUserId, onlineUs
     useEffect(() => {
         if (!socket) return;
         const handleNewMessage = (data) => {
-            const sender = data.from;
+            const sender = data.from; // user ID
             if (sender === currentUserId) return;
-            if (sender === selectedUser) return;
+            if (selectedUser && sender === selectedUser._id) return;
 
             if (data._id) {
                 socket.emit('message_delivered', { messageId: data._id });
@@ -60,14 +60,15 @@ const UsersList = ({ onSelectUser, socket, selectedUser, currentUserId, onlineUs
 
             // Bubble this conversation to the top (or add it if new)
             setConversations(prev => {
-                const existing = prev.find(c => c.username === sender);
+                const existing = prev.find(c => c.userId === sender);
                 const updated = {
-                    username: sender,
+                    userId: sender,
+                    username: data.fromUsername || existing?.username || 'Unknown',
                     lastMessage: data.message || '',
                     lastMessageTime: data.createdAt || new Date().toISOString(),
                 };
                 if (existing) {
-                    return [updated, ...prev.filter(c => c.username !== sender)];
+                    return [updated, ...prev.filter(c => c.userId !== sender)];
                 } else {
                     return [updated, ...prev];
                 }
@@ -97,7 +98,7 @@ const UsersList = ({ onSelectUser, socket, selectedUser, currentUserId, onlineUs
                 .then(res => res.json())
                 .then(data => {
                     if (Array.isArray(data)) {
-                        setSearchResults(data.filter(u => u.username !== currentUserId));
+                        setSearchResults(data.filter(u => u._id !== currentUserId));
                     } else {
                         setSearchResults([]);
                     }
@@ -110,17 +111,17 @@ const UsersList = ({ onSelectUser, socket, selectedUser, currentUserId, onlineUs
         };
     }, [searchQuery, currentUserId]);
 
-    const handleSelect = (username) => {
-        setUnreadCounts(prev => ({ ...prev, [username]: 0 }));
+    const handleSelect = (userId, username) => {
+        setUnreadCounts(prev => ({ ...prev, [userId]: 0 }));
         setSearchQuery("");
         setSearchResults([]);
         setIsSearching(false);
-        onSelectUser(username);
+        onSelectUser({ _id: userId, username });
 
         // Add to conversations if not already there
         setConversations(prev => {
-            if (prev.find(c => c.username === username)) return prev;
-            return [{ username, lastMessage: '', lastMessageTime: null }, ...prev];
+            if (prev.find(c => c.userId === userId)) return prev;
+            return [{ userId, username, lastMessage: '', lastMessageTime: null }, ...prev];
         });
     };
 
@@ -176,14 +177,14 @@ const UsersList = ({ onSelectUser, socket, selectedUser, currentUserId, onlineUs
                         searchResults.map((user) => (
                             <li
                                 key={user._id}
-                                onClick={() => handleSelect(user.username)}
+                                onClick={() => handleSelect(user._id, user.username)}
                                 className="flex items-center gap-3 p-4 border-b border-gray-800 cursor-pointer hover:bg-gray-700 text-white transition-colors"
                             >
                                 <div className="relative">
                                     <div className="w-10 h-10 rounded-full bg-indigo-600 flex items-center justify-center font-bold text-sm">
                                         {user.username[0].toUpperCase()}
                                     </div>
-                                    <span className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-gray-900 ${onlineUsers.includes(user.username) ? 'bg-green-500' : 'bg-gray-500'}`}></span>
+                                    <span className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-gray-900 ${onlineUsers.includes(user._id) ? 'bg-green-500' : 'bg-gray-500'}`}></span>
                                 </div>
                                 <span className="flex-1 text-sm">{user.username}</span>
                             </li>
@@ -201,15 +202,15 @@ const UsersList = ({ onSelectUser, socket, selectedUser, currentUserId, onlineUs
                     ) : (
                         conversations.map((conv) => (
                             <li
-                                key={conv.username}
-                                onClick={() => handleSelect(conv.username)}
-                                className={`flex items-center gap-3 p-3 border-b border-gray-800 cursor-pointer hover:bg-gray-700 text-white transition-colors ${selectedUser === conv.username ? 'bg-gray-800' : ''}`}
+                                key={conv.userId}
+                                onClick={() => handleSelect(conv.userId, conv.username)}
+                                className={`flex items-center gap-3 p-3 border-b border-gray-800 cursor-pointer hover:bg-gray-700 text-white transition-colors ${selectedUser && selectedUser._id === conv.userId ? 'bg-gray-800' : ''}`}
                             >
                                 <div className="relative flex-shrink-0">
                                     <div className="w-10 h-10 rounded-full bg-indigo-600 flex items-center justify-center font-bold text-sm">
                                         {conv.username[0].toUpperCase()}
                                     </div>
-                                    <span className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-gray-900 ${onlineUsers.includes(conv.username) ? 'bg-green-500' : 'bg-gray-500'}`}></span>
+                                    <span className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-gray-900 ${onlineUsers.includes(conv.userId) ? 'bg-green-500' : 'bg-gray-500'}`}></span>
                                 </div>
                                 <div className="flex-1 min-w-0">
                                     <div className="flex items-center justify-between">
@@ -224,9 +225,9 @@ const UsersList = ({ onSelectUser, socket, selectedUser, currentUserId, onlineUs
                                         <span className="text-xs text-gray-400 truncate">
                                             {truncate(conv.lastMessage)}
                                         </span>
-                                        {unreadCounts[conv.username] > 0 && (
+                                        {unreadCounts[conv.userId] > 0 && (
                                             <span className="bg-indigo-500 text-white text-xs font-bold px-2 py-0.5 rounded-full flex-shrink-0 ml-2">
-                                                {unreadCounts[conv.username]}
+                                                {unreadCounts[conv.userId]}
                                             </span>
                                         )}
                                     </div>

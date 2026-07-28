@@ -163,7 +163,7 @@ async function main() {
     }
     jwt.verify(token, JWT_SECRET, (err, decoded) => {
       if (err) return next(new Error('Authentication error: Invalid token'));
-      socket.userId = decoded.username;
+      socket.userId = decoded.id;
       next();
     });
   });
@@ -229,9 +229,13 @@ async function main() {
 
       socket.emit('message_sent', { tempId: data.tempId, _id: newMessage._id, status: 'sent', createdAt: newMessage.createdAt });
 
+      const sender = await User.findById(data.fromUserId).select('username');
+      const fromUsername = sender ? sender.username : 'Unknown';
+
       io.to(data.toUserId).emit('new_message', {
         _id: newMessage._id,
         from: data.fromUserId,
+        fromUsername,
         message: cleanMessage,
         status: 'sent',
         createdAt: newMessage.createdAt
@@ -241,14 +245,21 @@ async function main() {
     socket.on('resync', async ({ lastDate, userId }) => {
       if (!lastDate || !userId) return;
       const missed = await Message.find({ to: userId, createdAt: { $gt: new Date(lastDate) } }).sort({ createdAt: 1 });
-      for (const msg of missed) {
-        socket.emit('new_message', {
-          _id: msg._id,
-          from: msg.from,
-          message: msg.message,
-          status: msg.status,
-          createdAt: msg.createdAt
-        });
+      if (missed.length > 0) {
+        const senderIds = [...new Set(missed.map(m => m.from))];
+        const senders = await User.find({ _id: { $in: senderIds } }).select('username');
+        const senderMap = new Map(senders.map(u => [u._id.toString(), u.username]));
+
+        for (const msg of missed) {
+          socket.emit('new_message', {
+            _id: msg._id,
+            from: msg.from,
+            fromUsername: senderMap.get(msg.from.toString()) || 'Unknown',
+            message: msg.message,
+            status: msg.status,
+            createdAt: msg.createdAt
+          });
+        }
       }
     });
 
@@ -410,8 +421,8 @@ async function main() {
         return res.status(400).json({ message: 'Username can only contain letters, numbers, dots, and underscores' });
       }
 
-      // Check if username is taken
-      const existing = await User.findOne({ username: trimmed });
+      // Check if username is taken (case-insensitive)
+      const existing = await User.findOne({ username: { $regex: `^${trimmed.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, $options: 'i' } });
       if (existing) {
         return res.status(409).json({ message: 'Username is already taken' });
       }
@@ -492,7 +503,7 @@ async function main() {
     try {
       const { username, email, password, publicKey } = req.body;
 
-      const existingUser = await User.findOne({ username });
+      const existingUser = await User.findOne({ username: { $regex: `^${username.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, $options: 'i' } });
       if (existingUser)
         return res.status(400).json({ message: "Username already taken" });
 
@@ -523,8 +534,8 @@ async function main() {
 
       // Accept email or username — if it contains @, treat as email
       const query = username.includes('@')
-        ? { email: username }
-        : { username: username };
+        ? { email: username.toLowerCase() }
+        : { username: { $regex: `^${username.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, $options: 'i' } };
 
       const user = await User.findOne(query);
       if (!user || !user.password)
@@ -549,7 +560,7 @@ async function main() {
   // GET /api/auth/profile — returns logged-in user's details
   app.get('/api/auth/profile', verifyToken, async (req, res) => {
     try {
-      const user = await User.findOne({ username: req.user.username }).select('-password -__v');
+      const user = await User.findById(req.user.id).select('-password -__v');
       if (!user) return res.status(404).json({ message: 'User not found' });
       res.json({
         username: user.username,
@@ -557,6 +568,49 @@ async function main() {
         googleLinked: !!user.googleId,
         createdAt: user.createdAt,
       });
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // POST /api/auth/update-username — update logged-in user's username
+  app.post('/api/auth/update-username', verifyToken, async (req, res) => {
+    try {
+      const { username } = req.body;
+      if (!username) {
+        return res.status(400).json({ message: 'Username is required' });
+      }
+
+      const trimmed = username.trim();
+      if (trimmed.length < 3 || trimmed.length > 30) {
+        return res.status(400).json({ message: 'Username must be 3-30 characters' });
+      }
+      if (!/^[a-zA-Z0-9._]+$/.test(trimmed)) {
+        return res.status(400).json({ message: 'Username can only contain letters, numbers, dots, and underscores' });
+      }
+
+      // Check if username is already taken (case-insensitive)
+      const existing = await User.findOne({ username: { $regex: `^${trimmed.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, $options: 'i' } });
+      if (existing && existing._id.toString() !== req.user.id) {
+        return res.status(409).json({ message: 'Username is already taken' });
+      }
+
+      // Update user
+      const user = await User.findById(req.user.id);
+      if (!user) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+      user.username = trimmed;
+      await user.save();
+
+      // Issue a new token with updated username
+      const token = jwt.sign(
+        { id: user._id, username: user.username },
+        JWT_SECRET,
+        { expiresIn: "1d" }
+      );
+
+      res.json({ message: 'Username updated successfully', token, username: user.username });
     } catch (err) {
       res.status(500).json({ error: err.message });
     }
@@ -674,25 +728,30 @@ async function main() {
   // GET /api/conversations — distinct users the logged-in user has messaged with
   app.get('/api/conversations', verifyToken, async (req, res) => {
     try {
-      const me = req.user.username;
+      const meId = req.user.id;
 
-      // Find all distinct usernames this user has exchanged messages with
-      const sent = await Message.distinct('to', { from: me });
-      const received = await Message.distinct('from', { to: me });
-      const partnerUsernames = [...new Set([...sent, ...received])];
+      // Find all distinct user IDs this user has exchanged messages with
+      const sent = await Message.distinct('to', { from: meId });
+      const received = await Message.distinct('from', { to: meId });
+      const partnerIds = [...new Set([...sent, ...received])].filter(id => id !== meId);
+
+      // Fetch user details for all these partners
+      const partners = await User.find({ _id: { $in: partnerIds } }).select('username');
+      const partnerMap = new Map(partners.map(u => [u._id.toString(), u.username]));
 
       // For each partner, grab the latest message for preview/sorting
       const conversations = await Promise.all(
-        partnerUsernames.map(async (partner) => {
+        partnerIds.map(async (partnerId) => {
           const lastMsg = await Message.findOne({
             $or: [
-              { from: me, to: partner },
-              { from: partner, to: me }
+              { from: meId, to: partnerId },
+              { from: partnerId, to: meId }
             ]
           }).sort({ createdAt: -1 });
 
           return {
-            username: partner,
+            userId: partnerId,
+            username: partnerMap.get(partnerId.toString()) || 'Unknown',
             lastMessage: lastMsg?.message || '',
             lastMessageTime: lastMsg?.createdAt || null,
           };

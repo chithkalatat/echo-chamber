@@ -7,7 +7,7 @@ import ChatWindow from '../chatWindow';
 export default function Chat() {
     const token = localStorage.getItem('token');
     const currentUserId = token
-        ? JSON.parse(atob(token.split('.')[1])).username
+        ? JSON.parse(atob(token.split('.')[1])).id
         : null;
     const [selectedUser, setSelectedUser] = useState(null);
     const [socket, setSocket] = useState(null);
@@ -68,7 +68,7 @@ export default function Chat() {
                 </button>
             </div>
             <UsersList
-                onSelectUser={(username) => setSelectedUser(username)}
+                onSelectUser={(user) => setSelectedUser(user)}
                 socket={socket}
                 selectedUser={selectedUser}
                 currentUserId={currentUserId}
@@ -77,9 +77,9 @@ export default function Chat() {
             {selectedUser
                 ? <ChatWindow 
                     currentUserId={currentUserId} 
-                    targetUserId={selectedUser} 
+                    targetUser={selectedUser} 
                     socket={socket} 
-                    isOnline={onlineUsers.includes(selectedUser)} 
+                    isOnline={onlineUsers.includes(selectedUser._id)} 
                   />
                 : <div className="flex-1 flex items-center justify-center text-gray-500 text-lg">
                     Select a contact to start chatting

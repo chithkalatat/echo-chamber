@@ -163,6 +163,65 @@ describe('Conversations & Search Endpoints Integration Tests', () => {
   });
 });
 
+describe('Username Update and Linkage by ID Tests', () => {
+  let token;
+  let user1;
+
+  beforeAll(async () => {
+    // Register testuser1
+    await request(app)
+      .post('/api/register')
+      .send({ username: 'u1edit', email: 'u1edit@example.com', password: 'password123' });
+
+    // Log in testuser1
+    const res = await request(app)
+      .post('/api/login')
+      .send({ username: 'u1edit', password: 'password123' });
+    token = res.body.token;
+
+    // Get user details
+    const profileRes = await request(app)
+      .get('/api/auth/profile')
+      .set('Authorization', `Bearer ${token}`);
+    user1 = profileRes.body;
+  });
+
+  test('POST /api/auth/update-username - Success & Token update', async () => {
+    const res = await request(app)
+      .post('/api/auth/update-username')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ username: 'u1newname' });
+
+    expect(res.status).toBe(200);
+    expect(res.body.message).toBe('Username updated successfully');
+    expect(res.body.token).toBeDefined();
+    expect(res.body.username).toBe('u1newname');
+
+    // Verify profile endpoint returns new username
+    const profileRes = await request(app)
+      .get('/api/auth/profile')
+      .set('Authorization', `Bearer ${res.body.token}`);
+    expect(profileRes.status).toBe(200);
+    expect(profileRes.body.username).toBe('u1newname');
+  });
+
+  test('POST /api/auth/update-username - Validation Rejection', async () => {
+    // Too short
+    let res = await request(app)
+      .post('/api/auth/update-username')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ username: 'ab' });
+    expect(res.status).toBe(400);
+
+    // Invalid characters
+    res = await request(app)
+      .post('/api/auth/update-username')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ username: 'invalid name!' });
+    expect(res.status).toBe(400);
+  });
+});
+
 describe('Authentication Rate Limiting Tests', () => {
   test('POST /api/login - Triggers rate limiting after max attempts', async () => {
     // Make 15 login attempts in quick succession
